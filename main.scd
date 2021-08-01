@@ -10,6 +10,8 @@ s.waitForBoot {(
 
 	~caesarInputBus = Bus.audio(s,2);
 	~caesarOutputBus = Bus.audio(s,2);
+	~nextReadLevel = 0;
+	~nextReadDiv = 0.1;
 
 	~currentLoop = 0;
 	//array of loops in my home folder
@@ -205,6 +207,9 @@ MKtl(\mm).addNamed(\slider7, MKtl(\mm).elAt(\sl,6));
 MKtl(\mm).addNamed(\slider8, MKtl(\mm).elAt(\sl,7));
 MKtl(\mm).addNamed(\slider9, MKtl(\mm).elAt(\sl,8));
 
+MKtl(\mm).addNamed(\bankleft, MKtl(\mm).elAt(\bankLeft,0));
+MKtl(\mm).addNamed(\bankright, MKtl(\mm).elAt(\bankRight,0));
+
 /*this is a 6-bit binary "display" to have some feedback
 when scrolling through the buffers on the disk*/
 ~showCurrentLoop = {
@@ -276,6 +281,9 @@ when scrolling through the buffers on the disk*/
 			}, { MKtl(\mm).elAt(\bt,0,7,0).value_(127);
 				~caesar.freeze;
 		});},
+		//beware: adding readheads may make a feedback mess, use with caution
+		addReadHead: { if(~caesar.reads[7]==nil,{~caesar.addRead(~nextReadDiv,~nextReadLevel,rrand(-0.05,0.05));},{"too many read heads".postln;});},
+		removeReadHead: { if(~caesar.reads[1]==nil,{"don't want to remove the main read head".postln;},{~caesar.removeRead;});},
 		setCloud1Pitch: { |el| ~preMixerSynth.set(\cloud1Pitch, el.value.linlin(0,1,-24.0,24.0));},
 		setCloud1Pos: { |el| ~preMixerSynth.set(\cloud1Pos, el.value);},
 		setCloud1Size: { |el| ~preMixerSynth.set(\cloud1Size, el.value);},
@@ -293,16 +301,14 @@ when scrolling through the buffers on the disk*/
 		setCloud2Reverb: { |el| ~postMixerSynth.set(\cloud2Reverb, el.value);},
 		setCloud2Feedback: { |el| ~postMixerSynth.set(\cloud2Feedback, el.value);},
 		//other fx
-		setTapeSpeed: { |el| ~tapeSynth.set(\rate, el.value.linlin(0,1,0.5,1.5));},
-		//setRecLevel: { |el| ~recorderSynth.set(\gain, el.value);},
+		setTapeSpeed: { |el| ~tapeSynth.set(\rate, el.value.linlin(0,1,0.1,2.0));},
 		setCaesarPitch: { |el| ~caesar.pitch_(el.value.linlin(0,1,-4,4));},
 		setLowpass: { |el| ~preMixerSynth.set(\lowpass, el.value.linlin(0,1,32,16384));},
 		setHighpass: { |el| ~preMixerSynth.set(\highpass, el.value.linlin(0,1,16,8192));},
 		setDrop: { |el| ~preMixerSynth.set(\drop, el.value.linlin(0,1,0,90));},
-		//setOutof: { |el| ~preMixerSynth.set(\outof, el.value.linlin(0,1,20,100));},
 		setCaesarFeedback: { |el| ~caesar.masterFeedback_(el.value);},
 		setDrive: { |el| ~preMixerSynth.set(\drive, el.value);},
-		setShelf: { |el| ~preMixerSynth.set(\shelf, el.value);},
+		setNextReadDiv: { |el| ~nextReadDiv=el.value.linlin(0,1,0.001,0.998);},
 		//vols
 		setInAmp: { |el| ~preMixerSynth.set(\inAmp,el.value);},
 		setTapeAmp: { |el| ~preMixerSynth.set(\tapeAmp,el.value);},
@@ -311,6 +317,7 @@ when scrolling through the buffers on the disk*/
 		setCaesarAmp: { |el| ~postMixerSynth.set(\caesarAmp,el.value);},
 		setCloud1Amp: { |el| ~preMixerSynth.set(\cloud1Amp,el.value*1.5);},
 		setCloud2Amp: { |el| ~postMixerSynth.set(\cloud2Amp,el.value*1.5);},
+		setNextReadLevel: { |el| ~nextReadLevel=el.value;},
 		setFinalAmp: { |el| ~outputSynth.set(\amp,el.value);}
 	)
 );
@@ -321,6 +328,7 @@ when scrolling through the buffers on the disk*/
 		\ctlMap1: (
 			\button1: \cloud1Freeze,
 			\button2: \cloud2Freeze,
+			//button3 TODO
 			\button4: \tapLength,
 			\button5: \record,
 			\button6: \clear,
@@ -328,6 +336,8 @@ when scrolling through the buffers on the disk*/
 			\button8: \freeze,
 			\button9: \selectBefore,
 			\button10: \selectNext,
+			\bankleft: \addReadHead,
+			\bankright: \removeReadHead,
 			//clouding
 			\knob1: \setCloud1Pitch,
 			\knob2: \setCloud1Pos,
@@ -352,8 +362,8 @@ when scrolling through the buffers on the disk*/
 			\knob20: \setHighpass,
 			\knob21: \setDrop,
 			\knob22: \setCaesarFeedback,
-			\knob23: \setDrive,
-			\knob24: \setShelf,
+			\knob23: \setNextReadDiv,
+			\knob24: \setDrive,
 			//buttons
 			\slider1: \setInAmp,
 			\slider2: \setTapeAmp,
@@ -362,6 +372,7 @@ when scrolling through the buffers on the disk*/
 			\slider5: \setCloud1Amp,
 			\slider6: \setCloud2Amp,
 			\slider7: \setCaesarAmp,
+			\slider8: \setNextReadLevel,
 			\slider9: \setFinalAmp
 		)
 	)
