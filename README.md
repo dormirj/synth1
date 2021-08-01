@@ -1,5 +1,5 @@
 # synth1
-standalone fx unit, plays field recordings, degrades and granulates sound sources, does looping.
+fx unit/ambient generator, plays field recordings, degrades and granulates sound sources, does looping, configured to be controlled by an akai midimix, but could be adapted to any device with sufficient controls.
 
 uses:
 the clouds implementation from https://github.com/v7b1/mi-UGens<br>
