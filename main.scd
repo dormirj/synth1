@@ -80,7 +80,7 @@ s.waitForBoot {(
 	}).add;
 
 	SynthDef.new(\preMixer,{
-		arg inAmp=0,tapeAmp=0,cloud1Amp=0,cloud2Amp=0,noiseAmp=0,dryAmp=0,caesarAmp=0,
+		arg inAmp=0,tapeAmp=0,cloud1Amp=0,cloud2Amp=0,noiseAmp=0,dryAmp=0,
 		lowpass=16384,highpass=16,
 		cloud1Pitch=0,cloud1Pos=0.5,cloud1Size=0.25,cloud1Dens=0.4,cloud1Tex=0.5,cloud1Spread=0.5,cloud1Reverb=0,cloud1Feedback=0,
 		t_cloud1Freeze=0,
@@ -137,7 +137,20 @@ s.sync;
 ~noiseSynth=Synth.new(\noise,[\amp,0.8],~sourceGroup);
 ~tapeSynth=Synth.new(\tape,[\amp,0.8,\rate,1,\bufn,~arrayOfBuffers[~currentLoop].bufnum],~sourceGroup);
 //~recorderSynth=Synth.new(\recorder,[\amp,0.8,\rate,1,\bufn,~arrayOfBuffers[~currentLoop].bufnum,\gain,0],~recGroup);
+
+(
+fork {
 ~caesar = CaesarLooper(~caesarInputBus,~caesarOutputBus,30,~recGroup);
+0.4.wait;
+~caesar.inputLevel_(0);
+~caesar.dryLevel_(0);
+~caesar.delay_(7);
+~caesar.effectLevel_(1);
+~caesar.masterFeedback_(0);
+~caesar.clear;
+}
+);
+
 ~preMixerSynth=Synth.new(\preMixer,[
 	\inAmp,0,\tapeAmp,0,\cloud1Amp,0,
 	\lowpass,16384,\highpass,16,
@@ -382,21 +395,6 @@ when scrolling through the buffers on the disk*/
 	MKtl(\mm).elAt(elName).postln.action = ~controls.actions[actName.postln].postln;
 };
 //m.gui;
-);
-(
-//LOOPER INIT
-~caesar.delay_(7);
-~caesar.dryLevel_(0);
-~caesar.inputLevel_(1);
-0.1.wait;
-/*i don't know why yet, but caesarlooper seems to have a bug,
-when i just set inputlevel to zero, so i set it to 1, wait
-and then set it to zero, otherwise it would be recording
-at startup*/
-~caesar.inputLevel_(0);
-~caesar.effectLevel_(1);
-~caesar.masterFeedback_(0);
-~caesar.clear;
 );
 }
 )
