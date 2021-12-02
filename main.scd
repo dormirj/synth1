@@ -6,6 +6,8 @@ s.waitForBoot{(
 		~mixerBus = Bus.audio(s, 2);
 		~caesarBus = Bus.audio(s, 2);
 
+		// my rpi is a bit slow, so have a little patience
+		30.wait;
 		// array of loops created by superclean
 		~arrayOfBuffers = ~clean.buffers[\fields];
 		~currentLoop = 0;
