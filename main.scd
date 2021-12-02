@@ -323,7 +323,7 @@ s.waitForBoot{(
 			sig * finalAmp;
 		}).play(0, 2, ~mixerGroup);
 
-		Ndef(\mixer).edit
+		// Ndef(\mixer).edit
 
 	);
 
