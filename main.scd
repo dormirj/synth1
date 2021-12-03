@@ -1,4 +1,5 @@
 (
+
 s.waitForBoot{(
 	(
 		~tapeBus = Bus.audio(s, 2);
@@ -6,8 +7,8 @@ s.waitForBoot{(
 		~mixerBus = Bus.audio(s, 2);
 		~caesarBus = Bus.audio(s, 2);
 
-		// my rpi is a bit slow, so have a little patience
-		30.wait;
+		// added a little waiting time, my rpi is slow
+		20.wait;
 		// array of loops created by superclean
 		~arrayOfBuffers = ~clean.buffers[\fields];
 		~currentLoop = 0;
@@ -45,11 +46,10 @@ s.waitForBoot{(
 			\end, [0.0, 1],
 			\lpf, [20, 22050],
 			\hpf, [10, 20050],
-			\pitch2, [0.125, 8],
+			\tapeAmp, [0, 1],
+			\shiftdistance, [0.0, 2],
 			\pitch2amp, [0, 1],
-			\pitch3, [0.125, 8],
 			\pitch3amp, [0, 1],
-			\pitch4, [0.125, 8],
 			\pitch4amp, [0, 1],
 		)
 	);
@@ -59,7 +59,8 @@ s.waitForBoot{(
 	(
 		Ndef(\tape, {
 			var amp, bufn, rate, sig, ptr, bufFrames, start, end, lpf, hpf, mix,
-			sig2, sig3, sig4, ptr2, ptr3, ptr4, pitch2, pitch2amp, pitch3, pitch3amp, pitch4, pitch4amp;
+			sig2, sig3, sig4, ptr2, ptr3, ptr4, shiftdistance,
+			tapeAmp, pitch2amp, pitch3amp, pitch4amp;
 
 			amp = \amp.kr(0.8, 0.01);
 			rate = \rate.kr(1, 0.2);
@@ -70,15 +71,13 @@ s.waitForBoot{(
 			lpf = \lpf.kr(22050, 0.2);
 			hpf = \hpf.kr(10, 0.2);
 
-			/* this might not be the most beautiful solution,
-			but it works for what i wanted to do, being able
-			to play looped samples with variable playback
-			speed as sort of "chords"*/
-			pitch2 = \pitch2.kr(1, 0.1);
+			/* new approach: have a shiftdistance to calculate
+			how far the other pitches are from the base rate */
+
+			tapeAmp = \tapeAmp.kr(0, 0.01);
+			shiftdistance = \shiftdistance.kr(0.0, 0.01);
 			pitch2amp = \pitch2amp.kr(0, 0.01);
-			pitch3 = \pitch3.kr(1, 0.1);
 			pitch3amp = \pitch3amp.kr(0, 0.01);
-			pitch4 = \pitch4.kr(1, 0.1);
 			pitch4amp = \pitch4amp.kr(0, 0.01);
 
 			ptr = Phasor.ar(
@@ -96,7 +95,7 @@ s.waitForBoot{(
 
 			ptr2 = Phasor.ar(
 				0,
-				pitch2,
+				rate - (rate * shiftdistance),
 				start,
 				end
 			);
@@ -109,7 +108,7 @@ s.waitForBoot{(
 
 			ptr3 = Phasor.ar(
 				0,
-				pitch3,
+				rate - ((rate / 2) * shiftdistance),
 				start,
 				end
 			);
@@ -122,7 +121,7 @@ s.waitForBoot{(
 
 			ptr4 = Phasor.ar(
 				0,
-				pitch4,
+				rate + (rate * shiftdistance),
 				start,
 				end
 			);
@@ -133,7 +132,7 @@ s.waitForBoot{(
 				ptr4
 			);
 
-			mix = Mix.ar([sig, sig2 * pitch2amp, sig3 * pitch3amp, sig4 * pitch4amp]);
+			mix = Mix.ar([sig * tapeAmp, sig2 * pitch2amp, sig3 * pitch3amp, sig4 * pitch4amp]);
 			mix = HPF.ar(mix, hpf);
 			mix = LPF.ar(mix, lpf);
 
@@ -209,7 +208,9 @@ s.waitForBoot{(
 			\drop, [0, 90],
 		)
 	);
+
 	s.sync;
+
 	(
 		Ndef(\granular_comp, {
 			arg	inAmp = 0, tapeAmp = 1, gain = 0, lookahead = 0, tFreq = 20, overlap = 2, rate = 1, lpf = 0, drop = 0;
@@ -238,7 +239,7 @@ s.waitForBoot{(
 			t = Impulse.ar(tFreq);
 
 			readPos = Wrap.ar(
-				writePos - 64 - lookahead / bufFrames,
+				writePos - 128 - lookahead / bufFrames,
 				0,
 				1
 			);
@@ -268,7 +269,7 @@ s.waitForBoot{(
 				DelayC.ar(
 					input,
 					0.5,
-					(64 + lookahead / SampleRate.ir )
+					(128 + lookahead / SampleRate.ir )
 				) * \dry.kr(1)
 			]) * gain.dbamp;
 
@@ -307,6 +308,8 @@ s.waitForBoot{(
 		Ndef(\mixer).addSpec(
 			\finalAmp, [0.0, 1],
 			\caesarAmp, [0.0, 1],
+			\reverbAmp, [0.0, 1],
+			\damp, [0.0, 1],
 		)
 	);
 
@@ -315,10 +318,23 @@ s.waitForBoot{(
 	(
 
 		Ndef(\mixer, {
-			arg finalAmp = 0.5, caesarAmp = 0.0;
-			var sig;
+			arg finalAmp = 0.5, caesarAmp = 0.0, reverbAmp = 0.0;
+			var sig, reverb;
 
 			sig = Mix.ar([In.ar(~mixerBus, 2), In.ar(~caesarBus, 2) * caesarAmp]);
+
+			// end of chain reverb
+			/* reverb = Greyhole.ar(sig, \delayTime.kr(2), \damp.kr(0), \size.kr(1),
+			\diff.kr(0.707), \feedback.kr(0.9), \modDepth.kr(0.1), \modFreq.kr(0.61)); */
+
+			reverb = JPverb.ar(sig, \t60.kr(0.8, 0.01), \damp.kr(0), \size.kr(4.3, 0.1), \earlyDiff.kr(0.7, 0.01),
+				\modDepth.kr(0.2, 0.01), \modFreq.kr(2.0, 0.1), \low.kr(0.8, 0.1), \mid.kr(1.0, 0.1), \high.kr(0.9, 0.1),
+				\lowcut.kr(400, 0.1), \highcut.kr(3000, 0.1));
+
+			/* reverb = NHHall.ar(sig, \rt60.kr(1, 0.01), \stereo.kr(0.5, 0.1), \lowFreq.kr(200, 0.1), \lowRatio.kr(0.5, 0.01), \hiFreq.kr(4000, 0.1),
+			\hiRatio.kr(0.5, 0.01), \earlyDiffusion.kr(0.6, 0.1), \lateDiffusion.kr(0.5, 0.1), \modRate.kr(0.2, 0.01), \modDepth.kr(0.3, 0.01)); */
+
+			sig = Mix.ar([sig, reverb * reverbAmp]);
 
 			sig * finalAmp;
 		}).play(0, 2, ~mixerGroup);
@@ -335,6 +351,7 @@ s.waitForBoot{(
 		// midi control things
 		m = MKtl('mm',"akai-midimix");
 		// m = MKtl('mm',"akai-hermod");
+		10.wait;
 
 		//give all the midimix controls names
 		MKtl(\mm).addNamed(\knob1, MKtl(\mm).elAt(\kn,0,0));
@@ -469,16 +486,18 @@ s.waitForBoot{(
 				setCaesarFeedback: { |el| ~caesar.masterFeedback_(el.value);},
 
 				// chord action
-				setPitch2: { |el| Ndef(\tape).set(\pitch2, el.value.linexp(0, 1, 0.125, 8)); },
+				setShiftDistance: { |el| Ndef(\tape).set(\shiftdistance, el.value.linlin(0, 1, 0, 2)); },
 				setPitch2Amp: { |el| Ndef(\tape).set(\pitch2amp, el.value); },
-				setPitch3: { |el| Ndef(\tape).set(\pitch3, el.value.linexp(0, 1, 0.125, 8)); },
 				setPitch3Amp: { |el| Ndef(\tape).set(\pitch3amp, el.value); },
-				setPitch4: { |el| Ndef(\tape).set(\pitch4, el.value.linexp(0, 1, 0.125, 8)); },
 				setPitch4Amp: { |el| Ndef(\tape).set(\pitch4amp, el.value); },
+
+				// reverb
+				setReverbDamping: { |el| Ndef(\reverb).set(\damp, el.value); },
+				setReverbLevel: { |el| Ndef(\mixer).set(\reverbAmp, el.value); },
 
 				// vols
 				setInAmp: { |el| Ndef(\granular_comp).set(\inAmp, el.value); },
-				setTapeAmp: { |el| Ndef(\granular_comp).set(\tapeAmp, el.value); },
+				setTapeAmp: { |el| Ndef(\tape).set(\tapeAmp, el.value); },
 				setDryAmp: { |el| Ndef(\granular_comp).set(\dry, el.value); },
 				setGrainAmp: { |el| Ndef(\granular_comp).set(\wet, el.value); },
 				setCaesarAmp: { |el| Ndef(\mixer).set(\caesarAmp, el.value); },
@@ -530,9 +549,11 @@ s.waitForBoot{(
 					\knob21: \setDrop,
 
 					// chordstuff
-					\knob22: \setPitch2,
-					\knob23: \setPitch3,
-					\knob24: \setPitch4,
+					\knob22: \setShiftDistance,
+
+					//reverb
+					\knob23: \setReverbDamping,
+					\knob24: \setReverbLevel,
 
 					// volumes
 					\slider1: \setInAmp,
@@ -555,4 +576,5 @@ s.waitForBoot{(
 	);
 );
 }
+
 )
