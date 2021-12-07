@@ -12,3 +12,6 @@ and some midi control from http://modalityteam.github.io/<br>
 the current signal chain is:
 
 audio input & buffer player --> granular compression and degradation --> looper & mixer --> out
+
+on my TODO list the next stop is to add different modes to the granulation control:
+choice between granular compressor, pitchshifter, reverberator and random sampler?
