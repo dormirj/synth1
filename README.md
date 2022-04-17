@@ -15,3 +15,6 @@ audio input & buffer player --> granular compression and degradation --> looper 
 
 on my TODO list the next stop is to add different modes to the granulation control:
 choice between granular compressor, pitchshifter, reverberator and random sampler?
+
+also TODO: add some playability by either direct control of playing phrases with certain
+characteristics and/or controlling parameters of randomly generated sequences
