@@ -325,6 +325,7 @@ s.waitForBoot{(
 						0.5,
 						(64 + lookahead / SampleRate.ir )
 					) * \dry.kr(1),
+					//~cleanBus is declared as the sole aux of superclean in the startup.scd
 					In.ar(~cleanBus, 2) * cleanAmp
 				]) * gain.dbamp;
 
