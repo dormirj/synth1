@@ -1,5 +1,5 @@
 # synth1
-fx unit/ambient generator, plays field recordings, degrades and granulates sound sources, does looping, configured to be controlled by an akai midimix, but could be adapted to any device with sufficient controls.
+fx unit/ambient generator, plays field recordings, degrades and granulates sound sources, does looping, configured to be controlled by _two_ akai midimixes, but could be adapted to any device with sufficient controls.
 
 uses:<br>
 superclean, an incredibly handy library https://github.com/danielmkarlsson/SuperClean/<br>
@@ -13,9 +13,9 @@ and some midi control from http://modalityteam.github.io/<br>
 the current signal chain is:
 
 audio input & buffer player --> granular compression and degradation --> looper & mixer --> out
+superclean microsound sequencer --> looper & mixer --> out
+  |
+  |----> can also modulate buffer player, granular and looper parameters
 
 on my TODO list the next stop is to add different modes to the granulation control:
 choice between granular compressor, pitchshifter, reverberator and random sampler?
-
-also TODO: add some playability by either direct control of playing phrases with certain
-characteristics and/or controlling parameters of randomly generated sequences
