@@ -12,10 +12,10 @@ and some midi control from http://modalityteam.github.io/<br>
 
 the current signal chain is:
 
-audio input & buffer player --> granular compression and degradation --> looper & mixer --> out
-superclean microsound sequencer --> looper & mixer --> out
-  |
-  |----> can also modulate buffer player, granular and looper parameters
-
-on my TODO list the next stop is to add different modes to the granulation control:
+audio input & buffer player --> granular compression and degradation --> looper & mixer --> out<br>
+superclean microsound sequencer --> looper & mixer --> out<br>
+  |<br>
+  |----> can also modulate buffer player, granular and looper parameters<br>
+<br>
+on my TODO list the next stop is to add different modes to the granulation control:<br>
 choice between granular compressor, pitchshifter, reverberator and random sampler?
